@@ -1,5 +1,6 @@
 import json
 import os
+import functools
 from requests import post
 
 url_api = 'https://api-seller.ozon.ru'
@@ -85,9 +86,12 @@ for date_k, order_v in orders.items():
     quantity_shirts = 0
     out_data = ''
 
-    print(order_v)
+    orders_sorted_by_size = sorted(order_v, key=lambda x: x['products'][0]['offer_id'][-2:])
+    orders_sorted_by_color = sorted(orders_sorted_by_size, key=lambda x: x['products'][0]['offer_id'][-4:-2])
+    orders_sorted_by_density = sorted(orders_sorted_by_color, key=lambda x: x['products'][0]['offer_id'][-7:-4])
+    orders_sorted = sorted(orders_sorted_by_density, key=lambda x: len(x['products']))
 
-    for order in order_v:
+    for order in orders_sorted:
         if order['products'][0]['offer_id'][:2] in ['01', '11', '21', '31', '41', 'u0', 'u1', 'u2', 'u3', 'u4']:
             date = date_k
             quantity_orders += 1
