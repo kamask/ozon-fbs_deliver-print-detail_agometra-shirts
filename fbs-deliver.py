@@ -1,6 +1,5 @@
 import json
 import os
-from datetime import datetime
 from requests import post
 
 url_api = 'https://api-seller.ozon.ru'
@@ -46,12 +45,15 @@ payload = {
     'offset': 0
 }
 
+
 def get_date(d: str):
     d = d.split('T')[0]
     d = d.split('-')
     return f'{d[2]}.{d[1]}.{d[0]}'
 
+
 delivers = []
+
 
 def get_deliver():
     data = post(url_get_deliver, headers=headers, data=json.dumps(payload)).json()
@@ -62,6 +64,7 @@ def get_deliver():
         get_deliver()
     else:
         return
+
 
 get_deliver()
 
@@ -81,6 +84,9 @@ for date_k, order_v in orders.items():
     quantity_orders = 0
     quantity_shirts = 0
     out_data = ''
+
+    print(order_v)
+
     for order in order_v:
         if order['products'][0]['offer_id'][:2] in ['01', '11', '21', '31', '41', 'u0', 'u1', 'u2', 'u3', 'u4']:
             date = date_k
