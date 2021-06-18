@@ -1,7 +1,9 @@
 import json
 import os
-import functools
-from requests import post
+import datetime
+import requests
+from PyPDF2 import PdfFileMerger
+
 
 url_api = 'https://api-seller.ozon.ru'
 url_get_deliver = url_api + '/v2/posting/fbs/list'
@@ -57,7 +59,7 @@ delivers = []
 
 
 def get_deliver():
-    data = post(url_get_deliver, headers=headers, data=json.dumps(payload)).json()
+    data = requests.post(url_get_deliver, headers=headers, data=json.dumps(payload)).json()
     delivers.extend(data['result'])
 
     if len(data['result']) == 50:
@@ -91,6 +93,8 @@ for date_k, order_v in orders.items():
     orders_sorted_by_density = sorted(orders_sorted_by_color, key=lambda x: x['products'][0]['offer_id'][-7:-4])
     orders_sorted = sorted(orders_sorted_by_density, key=lambda x: len(x['products']))
 
+    postings = []
+
     for order in orders_sorted:
         if order['products'][0]['offer_id'][:2] in ['01', '11', '21', '31', '41', 'u0', 'u1', 'u2', 'u3', 'u4']:
             date = date_k
@@ -100,6 +104,8 @@ for date_k, order_v in orders.items():
                 out_data += f'''                    {cur_date}
 '''
             post = order['posting_number']
+            postings.append(post)
+
             out_data += f'''-------------------------
 {post}
 '''
@@ -129,6 +135,23 @@ for date_k, order_v in orders.items():
     Количество отправлений - {quantity_orders}'''
     with open(date_k + '_Podbor.txt', 'w+') as f:
         f.write(out_data)
+
+    if date_k == datetime.date.today().strftime('%d.%m.%Y'):
+        url_get_labels = url_api + '/v2/posting/fbs/package-label'
+        merger = PdfFileMerger()
+
+        while len(postings) > 0:
+            labels = requests.post(url_get_labels, headers=headers, data=json.dumps({'posting_number': postings[:20]}))
+            if labels.status_code == 200:
+                with open('temp.pdf', 'wb+') as f:
+                    f.write(labels.content)
+
+                merger.append(open('temp.pdf', 'rb'))
+                os.unlink('temp.pdf')
+                postings = postings[20:]
+
+        with open(date_k + '_Marks.pdf', 'wb+') as f:
+            merger.write(f)
 
 
 total_all = 0
