@@ -146,6 +146,7 @@ for date_k, order_v in orders.items():
         merger = PdfFileMerger()
         i = 0
         parts = math.ceil(len(postings) / 20)
+        files = []
 
         print('Получение этикеток отправленй на ' + date_k)
         while len(postings) > 0:
@@ -157,11 +158,16 @@ for date_k, order_v in orders.items():
                 with open(str(i) + 'temp.pdf', 'wb+') as f:
                     f.write(labels.content)
 
-                merger.append(open(str(i) + 'temp.pdf', 'rb'))
+                f = open(str(i) + 'temp.pdf', 'rb')
+                merger.append(f)
+                files.append(f)
                 postings = postings[20:]
 
         with open(date_k + '_Marks.pdf', 'wb+') as f:
             merger.write(f)
+
+        for f in files:
+            f.close()
 
         while i > 0:
             os.remove(str(i) + 'temp.pdf')
