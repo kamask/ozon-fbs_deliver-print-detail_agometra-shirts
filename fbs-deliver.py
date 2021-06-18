@@ -2,6 +2,7 @@ import json
 import os
 import datetime
 import requests
+import math
 from PyPDF2 import PdfFileMerger
 
 
@@ -69,6 +70,7 @@ def get_deliver():
         return
 
 
+print('Получение новых отправлений...')
 get_deliver()
 
 orders = {}
@@ -88,12 +90,15 @@ for date_k, order_v in orders.items():
     quantity_shirts = 0
     out_data = ''
 
+    print('Производится улучшеная сортировка ' + date_k)
     orders_sorted_by_size = sorted(order_v, key=lambda x: x['products'][0]['offer_id'][-2:])
-    orders_sorted_by_color = sorted(orders_sorted_by_size, key=lambda x: x['products'][0]['offer_id'][-4:-2])
-    orders_sorted_by_density = sorted(orders_sorted_by_color, key=lambda x: x['products'][0]['offer_id'][-7:-4])
-    orders_sorted = sorted(orders_sorted_by_density, key=lambda x: len(x['products']))
+    orders_sorted_by_density = sorted(orders_sorted_by_size, key=lambda x: x['products'][0]['offer_id'][-7:-4])
+    orders_sorted_by_color = sorted(orders_sorted_by_density, key=lambda x: x['products'][0]['offer_id'][-4:-2])
+    orders_sorted = sorted(orders_sorted_by_color, key=lambda x: len(x['products']))
 
     postings = []
+
+    print('Формирование листов подбора ' + date_k)
 
     for order in orders_sorted:
         if order['products'][0]['offer_id'][:2] in ['01', '11', '21', '31', '41', 'u0', 'u1', 'u2', 'u3', 'u4']:
@@ -139,19 +144,30 @@ for date_k, order_v in orders.items():
     if date_k == datetime.date.today().strftime('%d.%m.%Y'):
         url_get_labels = url_api + '/v2/posting/fbs/package-label'
         merger = PdfFileMerger()
+        i = 0
+        parts = math.ceil(len(postings) / 20)
 
+        print('Получение этикеток отправленй на ' + date_k)
         while len(postings) > 0:
+            i += 1
+
+            print(str(i) + ' часть из ' + str(parts) + ' ...')
             labels = requests.post(url_get_labels, headers=headers, data=json.dumps({'posting_number': postings[:20]}))
             if labels.status_code == 200:
-                with open('temp.pdf', 'wb+') as f:
+                with open(str(i) + 'temp.pdf', 'wb+') as f:
                     f.write(labels.content)
 
-                merger.append(open('temp.pdf', 'rb'))
-                os.unlink('temp.pdf')
+                merger.append(open(str(i) + 'temp.pdf', 'rb'))
                 postings = postings[20:]
 
         with open(date_k + '_Marks.pdf', 'wb+') as f:
             merger.write(f)
+
+        while i > 0:
+            os.remove(str(i) + 'temp.pdf')
+            i -= 1
+
+        print('Этикетки получены, формирование листов подбора на другие дни...')
 
 
 total_all = 0
@@ -177,3 +193,5 @@ for date, d in total.items():
     /////////////////////////////////////////////////'''
     with open(date + '_Total.txt', 'w+') as f:
         f.write(out_data)
+
+input('Всё готово! Нажмите любую клавишу!\n\nЭтого озона рот...\n...ственник)')
