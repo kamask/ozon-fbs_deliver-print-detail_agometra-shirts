@@ -27,7 +27,6 @@ colors = {
     '11': 'Голубой',
     '12': 'Хаки'
 }
-
 sizes = {
     '48': 'S',
     '50': 'M',
@@ -35,7 +34,6 @@ sizes = {
     '54': 'XL',
     '56': 'XXL'
 }
-
 headers = {
     'Content-Type': 'application/json; charset=utf-8',
     'Client-Id': client_id,
